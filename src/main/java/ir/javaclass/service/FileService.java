@@ -251,6 +251,7 @@ public class FileService {
                 if(downloadFolder.exists() && downloadFolder.isDirectory()){
                     FileUtils.cleanDirectory(downloadFolder);
                 }
+                log.info("Clean All User Temp Files..");
             } catch (IOException e) {
                 log.error("error during clean user temp files...", e);
             }
