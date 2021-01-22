@@ -1,6 +1,7 @@
 package ir.javaclass.service;
 
 import ir.javaclass.entity.Peer;
+import ir.javaclass.exception.StoragePeerNotFoundException;
 import ir.javaclass.model.UserPlan;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -17,45 +18,49 @@ public class ReplicaChooser {
 
     private final PeerService peerService;
 
-    public List<String> choseStoragePeer(long itemLength, UserPlan userPlan){
+    public List<String> choseStoragePeer(long itemLength, UserPlan userPlan) throws StoragePeerNotFoundException {
         List<String> publicUrl = new ArrayList<>();
         List<Peer> peerInfoList = peerService.getPeerInfoList();
-        peerInfoList = peerInfoList.stream().filter(p -> p.getStatus().equals(Peer.PeerStatus.ACTIVE)).collect(Collectors.toList());;
-        switch (userPlan){
-            case CHEAP:{
+        peerInfoList = peerInfoList.stream().filter(p -> p.getStatus().equals(Peer.PeerStatus.ACTIVE)).collect(Collectors.toList());
+        peerInfoList = peerInfoList.stream().filter(p -> p.getFreeSpace() > itemLength).collect(Collectors.toList());
+        switch (userPlan) {
+            case CHEAP: {
                 sortForCheapPlan(peerInfoList);
-                if(peerInfoList.size() > 0)
+                if (peerInfoList.size() > 0)
                     publicUrl.add(peerInfoList.get(0).getUrl());
+                else
+                    throw new StoragePeerNotFoundException();
                 break;
             }
-            case NORMAL:{
+            case NORMAL: {
                 sortForNormalPlan(peerInfoList);
-                if(peerInfoList.size() > 1) {
+                if (peerInfoList.size() > 1) {
                     publicUrl.add(peerInfoList.get(0).getUrl());
                     publicUrl.add(peerInfoList.get(1).getUrl());
-                }
+                } else
+                    throw new StoragePeerNotFoundException();
                 break;
             }
-
-            case PREMIUM:{
+            case PREMIUM: {
                 sortForPremiumPlan(peerInfoList);
-                if(peerInfoList.size() > 2) {
+                if (peerInfoList.size() > 2) {
                     publicUrl.add(peerInfoList.get(0).getUrl());
                     publicUrl.add(peerInfoList.get(1).getUrl());
                     publicUrl.add(peerInfoList.get(2).getUrl());
-                }
+                } else
+                    throw new StoragePeerNotFoundException();
                 break;
             }
-
-            case VIP:{
+            case VIP: {
                 sortForVipPlan(peerInfoList);
-                if(peerInfoList.size() > 4) {
+                if (peerInfoList.size() > 4) {
                     publicUrl.add(peerInfoList.get(0).getUrl());
                     publicUrl.add(peerInfoList.get(1).getUrl());
                     publicUrl.add(peerInfoList.get(2).getUrl());
                     publicUrl.add(peerInfoList.get(3).getUrl());
                     publicUrl.add(peerInfoList.get(4).getUrl());
-                }
+                } else
+                    throw new StoragePeerNotFoundException();
                 break;
             }
         }

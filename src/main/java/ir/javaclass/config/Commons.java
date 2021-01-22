@@ -25,5 +25,5 @@ public class Commons {
     public final static long GB = MB * 1024;
     public static final String USER_PUBLIC_KEY ="0xf6397948abB6398fBc8CcACd699134B3CEA9dF72" ; /// second account in Ganache
     public final static  String USER_PRIVATE_KEY = "ec3483c22db9a614e0099e86a92d13146e20e844acc3b6fd126022007b28ba74";
-    private final static UserPlan userPlan = UserPlan.NORMAL;
+    public final static UserPlan USER_PLAN = UserPlan.NORMAL;
 }

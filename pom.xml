@@ -9,7 +9,7 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>ir.javaclass</groupId>
-    <artifactId>demo</artifactId>
+    <artifactId>BlockChainCleint</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>BC-Client</name>
     <description>Client for Blockchain Cloud Storage</description>

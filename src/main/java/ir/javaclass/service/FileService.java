@@ -8,6 +8,7 @@ import ir.javaclass.io.FileSplitter;
 import ir.javaclass.io.FileUtil;
 import ir.javaclass.model.FileInfoDto;
 import ir.javaclass.util.Util;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FileUtils;
@@ -21,6 +22,7 @@ import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.json.simple.parser.ParseException;
+import org.springframework.stereotype.Service;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
 
 import javax.crypto.NoSuchPaddingException;
@@ -36,21 +38,26 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Slf4j
+@Service
+@RequiredArgsConstructor
 public class FileService {
 
-    public static List<FileItem> listFile(String pk) throws Exception {
+    private final ReplicaChooser replicaChooser;
+
+    public  List<FileItem> listFile(String pk) throws Exception {
         return FileItemService.list(pk);
     }
 
-    public static List<TransactionReceipt> uploadFile(String publicKey, String privateKey, File inputFile) throws Exception {
+    public  List<TransactionReceipt> uploadFile(String publicKey, String privateKey, File inputFile, List<String> peerUrl) throws Exception {
         List<TransactionReceipt> receipts = new ArrayList<>();
-        String peerAddress = "http://192.168.1.105:8080";
-        List<String> peerList = new ArrayList<>();
-        peerList.add(peerAddress);
+        //String peerAddress = "http://192.168.1.105:8080";
+        //List<String> peerList = new ArrayList<>();
+        //peerList.add(peerAddress);
         FileEncryptor encryptor;
+        int uploadCount = 0;
 
         // update zero indexItem;
-        FileItem zeroIndex = new FileItem(inputFile, inputFile.getName(), "zeroIndex", 0, peerList);
+        FileItem zeroIndex = new FileItem(inputFile, inputFile.getName(), "zeroIndex", 0, peerUrl);
         zeroIndex.setOrigName(inputFile.getName());
         receipts.add(FileItemService.uploadFileInfo(privateKey, inputFile.getName(), zeroIndex));
 
@@ -69,26 +76,33 @@ public class FileService {
 
             for (Integer index : encryptedChunks.keySet()) {
                 File encrypted = encryptedChunks.get(index);
-                boolean uploadResult = uploadToPeer(encrypted, publicKey, peerAddress);
-                log.info("result of upload file: " + encrypted.getAbsolutePath() + " to peer: " + peerAddress + " is: " + uploadResult);
-                if (uploadResult) {
-                    FileItem newItem = new FileItem(inputFile, inputFile.getName(), encrypted.getName(), index, peerList);
+                for(String peerAddress :peerUrl) {
+                    boolean uploadResult = uploadToPeer(encrypted, publicKey, peerAddress);
+                    log.info("result of upload file: " + encrypted.getAbsolutePath() + " to peer: " + peerAddress + " is: " + uploadResult);
+                    uploadCount++;
+                }
+                if (uploadCount == peerUrl.size()) {
+                    FileItem newItem = new FileItem(inputFile, inputFile.getName(), encrypted.getName(), index, peerUrl);
                     receipts.add(FileItemService.uploadFileInfo(privateKey, inputFile.getName(), newItem));
                 }
             }
         } else {
             encryptor = new FileEncryptor(privateKey, inputFile);
             File encrypted = encryptor.doEncryption();
-            boolean uploadResult = uploadToPeer(encrypted, publicKey, peerAddress);
-            if (uploadResult) {
-                FileItem newItem =new FileItem(encrypted, inputFile.getName(), encrypted.getName(), 1, peerList);
+            for(String peerAddress :peerUrl) {
+                boolean uploadResult = uploadToPeer(encrypted, publicKey, peerAddress);
+                log.info("result of upload file: " + encrypted.getAbsolutePath() + " to peer: " + peerAddress + " is: " + uploadResult);
+                uploadCount++;
+            }
+            if (uploadCount == peerUrl.size()) {
+                FileItem newItem =new FileItem(encrypted, inputFile.getName(), encrypted.getName(), 1, peerUrl);
                 receipts.add(FileItemService.uploadFileInfo(privateKey, inputFile.getName(), newItem));
             }
         }
         return receipts;
     }
 
-    private static boolean uploadToPeer(File file, String publicKey, String storageAddress){
+    private  boolean uploadToPeer(File file, String publicKey, String storageAddress){
         AtomicBoolean result = new AtomicBoolean(false);
         try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
             HttpPut putRequest = new HttpPut(storageAddress + "/file/upload");
@@ -113,7 +127,7 @@ public class FileService {
 
 
 
-    public static Map<String, List<FileItem>> listCloudItem(String privateKey) throws Exception {
+    public  Map<String, List<FileItem>> listCloudItem(String privateKey) throws Exception {
         List<FileItem> fileItems = listFile(privateKey);
         if(!fileItems.isEmpty())
             return fileItems.stream().collect(Collectors.groupingBy(FileItem::getOrigName));
@@ -121,7 +135,7 @@ public class FileService {
     }
 
 
-    public static void downloadFromCloud(String publicKey, String privateKey, List<FileItem> fileItems, File outputFile) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidAlgorithmParameterException, InvalidKeyException, IOException {
+    public  void downloadFromCloud(String publicKey, String privateKey, List<FileItem> fileItems, File outputFile) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidAlgorithmParameterException, InvalidKeyException, IOException {
         fileItems.sort(Comparator.comparing(fileItem -> fileItem.getFileInfo().getChunkIndex()));
         List<File> downloadedFiles = new ArrayList<>();
         for(FileItem fileItem : fileItems)
@@ -134,7 +148,7 @@ public class FileService {
             Util.writeToFile(new FileInputStream(temp), outputFile.getAbsolutePath(), true);
     }
 
-    private static File downloadFile(String publicKey, String privateKey, FileItem origFileItem) throws IOException, InvalidAlgorithmParameterException, NoSuchAlgorithmException, InvalidKeyException, NoSuchPaddingException {
+    private File downloadFile(String publicKey, String privateKey, FileItem origFileItem) throws IOException, InvalidAlgorithmParameterException, NoSuchAlgorithmException, InvalidKeyException, NoSuchPaddingException {
         String storageSever = "http://192.168.1.105:8080";
         File download  = downloadFromPeer(publicKey, origFileItem.getFileInfo().getChunkName(), storageSever);
         FileEncryptor decryptor = new FileEncryptor(privateKey, download);
@@ -145,7 +159,7 @@ public class FileService {
         return  decryptedFile;
     }
 
-    private static File downloadFromPeer(String publicKey, String itemName, String storageAddress) throws IOException {
+    private File downloadFromPeer(String publicKey, String itemName, String storageAddress) throws IOException {
         File downloadFile  = new File(Commons.TEMP_DOWNLOAD_ADDRESS + FileDelimiter.getSystemDelimiter() + itemName);
         if(downloadFile.exists())
             FileUtils.forceDelete(downloadFile);
@@ -168,7 +182,7 @@ public class FileService {
         return downloadFile;
     }
 
-    public static void sync(String  publicKey, String privateKey, String syncFolder) {
+    public void sync(String  publicKey, String privateKey, String syncFolder) {
         log.info("*** Sync Algorithm Started... ");
         long startTime = System.currentTimeMillis();
         File userRootFolder = new File(syncFolder);
@@ -190,7 +204,8 @@ public class FileService {
                 log.info("all item new to upload in cloud...");
                 for (File file : localFiles) {
                     if (file.exists()) {
-                        uploadFile(publicKey, privateKey, file);
+                        List<String> peerList = replicaChooser.choseStoragePeer(file.length(), Commons.USER_PLAN);
+                        uploadFile(publicKey, privateKey, file, peerList);
                         log.info("file: " + file.getName() + " uploaded...");
                     }
                 }
@@ -206,7 +221,8 @@ public class FileService {
                     for (String fileName : newItems) {
                         File file = mapLocalFiles.get(fileName);
                         if (file.exists()) {
-                            uploadFile(publicKey, privateKey, file);
+                            List<String> peerList = replicaChooser.choseStoragePeer(file.length(), Commons.USER_PLAN);
+                            uploadFile(publicKey, privateKey, file, peerList);
                             log.info("file: " + fileName + " uploaded...");
                         }
                     }
@@ -227,7 +243,7 @@ public class FileService {
                             List<FileItem> chunkList = FileItemService.getAllFileMetadata(privateKey, publicKey, fileName);
                             chunkList.remove(0); //Todo: check  equals to zero index.
                             File outputFile = new File(syncFolder + "/" + fileName);
-                            FileService.downloadFromCloud(publicKey, privateKey, chunkList, outputFile);
+                            downloadFromCloud(publicKey, privateKey, chunkList, outputFile);
                             if (outputFile.exists()) {
                                 if (zeroIndex.getFileInfo().getHashContent().equals(FileUtil.getSHA256(outputFile))) {
                                     log.info("download from cloud is successfully done. " + outputFile.getAbsolutePath());
@@ -259,8 +275,7 @@ public class FileService {
     }
 
 
-
-    public static FileInfoDto getFileInfo(String publicKey, String itemName, String storageAddress) throws IOException, ParseException {
+    public  FileInfoDto getFileInfo(String publicKey, String itemName, String storageAddress) throws IOException, ParseException {
         CloseableHttpClient client = HttpClients.createDefault();
         String params = "?public_key=" + publicKey + "&file_name=" + itemName;
         HttpGet getRequest = new HttpGet(storageAddress + "/file/info/" + params);
@@ -281,7 +296,7 @@ public class FileService {
     }
 
 
-    private static boolean isFileChanged(File localFile, FileItem  fileItem) {
+    private  boolean isFileChanged(File localFile, FileItem  fileItem) {
         return !(localFile.length() == fileItem.getFileInfo().getSize() && FileUtil.getSHA256(localFile).equals(fileItem.getFileInfo().getHashContent()));
     }
 
