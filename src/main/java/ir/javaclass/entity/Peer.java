@@ -1,10 +1,17 @@
 package ir.javaclass.entity;
 
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 import org.web3j.tuples.generated.Tuple11;
 
 import java.math.BigInteger;
-import java.util.Date;
 
+@NoArgsConstructor
+@ToString
+@Setter
+@Getter
 public class Peer {
     private int id;
     private String owner;
@@ -17,95 +24,42 @@ public class Peer {
     private String availableTimeRange;
     private String date;
     private PeerStatus status;
-
-    public int getId() {
-        return id;
+    @Override
+    public Object clone() {
+        return new Peer(this);
     }
 
-    public void setId(int id) {
-        this.id = id;
+    public Peer(Peer peer){
+        Peer copyPeer = new Peer();
+        copyPeer.setId(peer.getId());
+        copyPeer.setOwner(peer.getOwner());
+        copyPeer.setUrl(peer.getUrl());
+        copyPeer.setTotalSpace(peer.getTotalSpace());
+        copyPeer.setUsedSpace(peer.getUsedSpace());
+        copyPeer.setMaxBandwidth(peer.getMaxBandwidth());
+        copyPeer.setMaxUser(peer.getMaxUser());
+        copyPeer.setUptimePercentage(peer.getUptimePercentage());
+        copyPeer.setAvailableTimeRange(peer.getAvailableTimeRange());
+        copyPeer.setDate(peer.getDate());
+        copyPeer.setStatus(peer.getStatus());
     }
 
-    public String getOwner() {
-        return owner;
+    public int getTotalAvailableTimeInWeek(){
+        try {
+            String s = this.availableTimeRange;
+            if (s.contains("*")) {
+                String[] key = s.split("\\*");
+                return Integer.parseInt(key[0]) * Integer.parseInt(key[1]);
+            }
+        }catch (Exception ex){
+            ex.printStackTrace();
+        }
+        return 0;
     }
 
-    public void setOwner(String owner) {
-        this.owner = owner;
+    public long getFreeSpace(){
+        return totalSpace - usedSpace;
     }
-
-    public String getUrl() {
-        return url;
-    }
-
-    public void setUrl(String url) {
-        this.url = url;
-    }
-
-    public long getTotalSpace() {
-        return totalSpace;
-    }
-
-    public void setTotalSpace(long totalSpace) {
-        this.totalSpace = totalSpace;
-    }
-
-    public long getUsedSpace() {
-        return usedSpace;
-    }
-
-    public void setUsedSpace(long usedSpace) {
-        this.usedSpace = usedSpace;
-    }
-
-    public long getMaxBandwidth() {
-        return maxBandwidth;
-    }
-
-    public void setMaxBandwidth(long maxBandwidth) {
-        this.maxBandwidth = maxBandwidth;
-    }
-
-    public int getMaxUser() {
-        return maxUser;
-    }
-
-    public void setMaxUser(int maxUser) {
-        this.maxUser = maxUser;
-    }
-
-    public int getUptimePercentage() {
-        return uptimePercentage;
-    }
-
-    public void setUptimePercentage(int uptimePercentage) {
-        this.uptimePercentage = uptimePercentage;
-    }
-
-    public String getAvailableTimeRange() {
-        return availableTimeRange;
-    }
-
-    public void setAvailableTimeRange(String availableTimeRange) {
-        this.availableTimeRange = availableTimeRange;
-    }
-
-    public String getDate() {
-        return date;
-    }
-
-    public void setDate(String date) {
-        this.date = date;
-    }
-
-    public PeerStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(PeerStatus status) {
-        this.status = status;
-    }
-
 
 
     public Peer(Tuple11<BigInteger, String, String, BigInteger, BigInteger, BigInteger, BigInteger, BigInteger, String, String, BigInteger> value) {
@@ -120,34 +74,6 @@ public class Peer {
         this.availableTimeRange = value.component9();
         this.date = value.component10();
         this.status = PeerStatus.toEnum(value.component11().intValue());
-    }
-
-    public Peer(String url, long totalSpace, long maxBandwidth, int maxUser, int uptimePercentage, String availableTimeRange) {
-        this.url = url;
-        this.totalSpace = totalSpace;
-        this.maxBandwidth = maxBandwidth;
-        this.maxUser = maxUser;
-        this.uptimePercentage = uptimePercentage;
-        this.availableTimeRange = availableTimeRange;
-        date = new Date().toString();
-        status = PeerStatus.ACTIVE;
-    }
-
-    @Override
-    public String toString() {
-        return "Peer{" +
-                "id=" + id +
-                ", owner='" + owner + '\'' +
-                ", url='" + url + '\'' +
-                ", totalSpace=" + totalSpace +
-                ", usedSpace=" + usedSpace +
-                ", maxBandwidth=" + maxBandwidth +
-                ", maxUser=" + maxUser +
-                ", uptimePercentage=" + uptimePercentage +
-                ", availableTimeRange='" + availableTimeRange + '\'' +
-                ", date='" + date + '\'' +
-                ", status=" + status +
-                '}';
     }
 
     public enum PeerStatus{
