@@ -1,4 +1,6 @@
-package ir.javaclass.config;/*
+/*
+package ir.javaclass.config;*/
+/*
 package ir.javaclass.config;
 
 
@@ -34,7 +36,8 @@ public class LoginSecurityConfig extends WebSecurityConfigurerAdapter {
                 .logout().logoutSuccessUrl("/loginPage?logout");
 
     }
-}*/
+}*//*
+
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -50,3 +53,4 @@ public class LoginSecurityConfig  extends WebSecurityConfigurerAdapter {
         http.csrf().disable();
     }
 }
+*/

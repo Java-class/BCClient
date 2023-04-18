@@ -1,12 +1,14 @@
 
 package ir.javaclass.util;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.servlet.http.HttpServletRequest;
 import java.io.*;
-import java.net.*;
-import java.util.*;
+import java.net.HttpURLConnection;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.Set;
 
 @Slf4j
 public class Util {
@@ -281,7 +283,7 @@ public class Util {
             throw new IllegalArgumentException(param + " must be greater than " + lowLimit + ".");
     }
 
-    public static void checkUperRange(int param, int upLimit, String name) {
+    public static void checkUpperRange(int param, int upLimit, String name) {
         if (param > upLimit)
             throw new IllegalArgumentException(param + " must be smaller than " + upLimit + ".");
     }

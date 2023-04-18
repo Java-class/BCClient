@@ -1,20 +1,19 @@
 package ir.javaclass.job;
 
 import ir.javaclass.config.Commons;
-import ir.javaclass.entity.FileItem;
 import ir.javaclass.service.FileService;
+import lombok.RequiredArgsConstructor;
 import org.quartz.*;
 import org.springframework.stereotype.Component;
-import org.web3j.protocol.core.methods.response.TransactionReceipt;
 
 import java.io.File;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @Component
 @DisallowConcurrentExecution
+@RequiredArgsConstructor
 public class SyncJob implements Job {
+
+    private final FileService fileService;
 
     @Override
     public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
@@ -23,7 +22,7 @@ public class SyncJob implements Job {
             File syncFolder = new File(Commons.SYNC_FOLDER_ADDRESS);
             if (syncFolder.exists()) {
                 if (syncFolder.isDirectory()) {
-                    FileService.sync(Commons.USER_PUBLIC_KEY, Commons.USER_PRIVATE_KEY, syncFolder.getAbsolutePath());
+                    fileService.sync(Commons.USER_PUBLIC_KEY, Commons.USER_PRIVATE_KEY, syncFolder.getAbsolutePath());
                 }
             } else {
                 System.out.println(" sync folder not found..");
@@ -34,9 +33,8 @@ public class SyncJob implements Job {
                     e.printStackTrace();
                 }
             }
-        }catch (Exception ex){
+        } catch (Exception ex) {
             ex.printStackTrace();
         }
-
     }
 }

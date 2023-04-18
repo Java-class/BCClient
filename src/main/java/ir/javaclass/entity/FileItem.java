@@ -1,6 +1,7 @@
 package ir.javaclass.entity;
 
 import ir.javaclass.io.FileUtil;
+import jakarta.validation.constraints.NotNull;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
@@ -8,7 +9,6 @@ import lombok.ToString;
 import org.apache.commons.io.FilenameUtils;
 import org.web3j.tuples.generated.Tuple6;
 
-import javax.validation.constraints.NotNull;
 import java.io.File;
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -48,7 +48,7 @@ public class FileItem {
 //        this.storage_address = storage_address;
 //    }
 
-    public FileItem(@NotNull File inputFile, String origName ,String chunkName, int chunkIndex, List<String> storage_address){
+    public FileItem(@NotNull File inputFile, String origName , String chunkName, int chunkIndex, List<String> storage_address){
         this.origName = origName;
         FileInfo fileInfo = new FileInfo();
         fileInfo.setContentType(FilenameUtils.getExtension(inputFile.getName()));
